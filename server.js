@@ -41,18 +41,24 @@ app.use(bodyParser.json());
 app.use('/api', apiRoutes);
 
 // Connect to DB (use env DB)
-const DB = process.env.DB || 'mongodb://127.0.0.1:27017/messageboard';
+const DB = process.env.DB;
+console.log("DB STRING:", DB ? "loaded" : "NOT LOADED");
+console.log("NODE_ENV:", process.env.NODE_ENV);
+
 mongoose.set('strictQuery', false);
 mongoose.connect(DB, {
   useNewUrlParser: true,
   useUnifiedTopology: true
-}).then(() => {
+})
+.then(() => {
+  console.log('Connected to DB');
+
   if (process.env.NODE_ENV !== 'test') {
-    console.log('Connected to DB');
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
   }
-}).catch(err => {
+})
+.catch(err => {
   console.error('DB connection error', err);
 });
 
