@@ -9,22 +9,20 @@ const apiRoutes = require('./routes/api');
 
 const app = express();
 
-
-app.use(helmet.frameguard({ action: "sameorigin" }));
-app.use(helmet.dnsPrefetchControl({ allow: false }));
-app.use(helmet.referrerPolicy({ policy: "same-origin" }));
-
-
-app.use(helmet.hidePoweredBy());
-app.use(helmet.noSniff());
-app.use(helmet.xssFilter());
-
-// CORS solo si lo necesitas (lo dejamos general)
-app.use(cors());
-
-// Body parsers
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+app.use(helmet.frameguard());
+
+app.use(helmet({
+  referrerPolicy: { policy: "same-origin" },
+  })
+);
+
+app.use(helmet.dnsPrefetchControl());
+
+app.use(cors( { origin: "*" }));
+
 
 // Routes
 app.use('/api', apiRoutes);
