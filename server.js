@@ -9,23 +9,12 @@ const apiRoutes = require('./routes/api');
 
 const app = express();
 
-// Security headers (requerimientos FCC)
-// 1. Only allow your site to be loaded in an iFrame on your own pages.
-app.use(helmet.frameguard({ action: 'sameorigin' })); // X-Frame-Options: SAMEORIGIN
 
-// 2. Do not allow DNS prefetching.
-app.use((req, res, next) => {
-  res.setHeader('X-DNS-Prefetch-Control', 'off');
-  next();
-});
+app.use(helmet.frameguard({ action: "sameorigin" }));
+app.use(helmet.dnsPrefetchControl({ allow: false }));
+app.use(helmet.referrerPolicy({ policy: "same-origin" }));
 
-// 3. Only allow your site to send the referrer for your own pages.
-app.use((req, res, next) => {
-  res.setHeader('Referrer-Policy', 'same-origin');
-  next();
-});
 
-// Otros headers de seguridad recomendados
 app.use(helmet.hidePoweredBy());
 app.use(helmet.noSniff());
 app.use(helmet.xssFilter());
