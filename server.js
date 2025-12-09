@@ -41,8 +41,8 @@ app.use(bodyParser.json());
 app.use('/api', apiRoutes);
 
 // Connect to DB (use env DB)
-const DB = process.env.DB;
-console.log("DB STRING:", DB ? "loaded" : "NOT LOADED");
+const DB = process.env.MONGO_URI;
+console.log("DB STRING:", process.env.DB || process.env.MONGO_URI);
 console.log("NODE_ENV:", process.env.NODE_ENV);
 
 mongoose.set('strictQuery', false);
