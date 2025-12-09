@@ -7,22 +7,22 @@ module.exports = function (app) {
   // THREADS -----------------------------
   app.route("/api/threads/:board")
     .post(async (req, res) => {
-      const board = req.params.board;
-      const { text, delete_password } = req.body;
+        const board = req.params.board;
+        const { text, delete_password } = req.body;
 
-      const thread = new Thread({
-        board,
-        text,
-        delete_password,
-        created_on: new Date(),
-        bumped_on: new Date(),
-        reported: false,
-        replies: []
-      });
+        const thread = new Thread({
+            board,
+            text,
+            delete_password,
+            created_on: new Date(),
+            bumped_on: new Date(),
+            reported: false,
+            replies: []
+    });
 
-      await thread.save();
-      res.json(thread);
-    })
+  await thread.save();
+  res.redirect(`/b/${board}/`);
+})
 
     .get(async (req, res) => {
       const board = req.params.board;
@@ -68,24 +68,23 @@ module.exports = function (app) {
 
 
   // REPLIES -----------------------------
-  app.route("/api/replies/:board")
-    .post(async (req, res) => {
-      const { text, delete_password, thread_id } = req.body;
+    app.route("/api/replies/:board")
+        .post(async (req, res) => {
+        const { text, delete_password, thread_id } = req.body;
 
-      const reply = {
-        _id: new Date().valueOf().toString(),
-        text,
-        delete_password,
-        created_on: new Date(),
-        reported: false
-      };
+        const reply = {
+            text,
+            delete_password,
+            created_on: new Date(),
+            reported: false
+        };
 
-      const thread = await Thread.findById(thread_id);
-      thread.replies.push(reply);
-      thread.bumped_on = new Date();
-      await thread.save();
+        const thread = await Thread.findById(thread_id);
+        thread.replies.push(reply);
+        thread.bumped_on = new Date();
+        await thread.save();
 
-      res.json(thread);
+        res.redirect(`/b/${req.params.board}/${thread_id}`);
     })
 
     .get(async (req, res) => {
