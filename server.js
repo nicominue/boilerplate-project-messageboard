@@ -43,7 +43,6 @@ app.use('/api', apiRoutes);
 // Connect to DB (use env DB)
 const DB = process.env.MONGO_URI;
 console.log("DB STRING:", process.env.DB || process.env.MONGO_URI);
-console.log("NODE_ENV:", process.env.NODE_ENV);
 
 mongoose.set('strictQuery', false);
 mongoose.connect(DB, {
@@ -53,10 +52,8 @@ mongoose.connect(DB, {
 .then(() => {
   console.log('Connected to DB');
 
-  if (process.env.NODE_ENV !== 'test') {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
-  }
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
 })
 .catch(err => {
   console.error('DB connection error', err);
