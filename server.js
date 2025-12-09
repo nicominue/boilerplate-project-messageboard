@@ -1,87 +1,59 @@
-'use strict';
 require('dotenv').config();
-
+const express = require('express');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("MongoDB conectado"))
-.catch(err => console.error("Error conectado a MongoDB:", err));
-const express     = require('express');
-const bodyParser  = require('body-parser');
-const cors        = require('cors');
-const helmet      = require("helmet");
-
-
-const apiRoutes         = require('./routes/api.js');
-const fccTestingRoutes  = require('./routes/fcctesting.js');
-const runner            = require('./test-runner');
+const apiRoutes = require('./routes/api');
 
 const app = express();
 
-app.use('/public', express.static(process.cwd() + '/public'));
+// Security headers (requerimientos FCC)
+// 1. Only allow your site to be loaded in an iFrame on your own pages.
+app.use(helmet.frameguard({ action: 'sameorigin' })); // X-Frame-Options: SAMEORIGIN
 
-app.use(cors({origin: '*'})); //For FCC testing purposes only
+// 2. Do not allow DNS prefetching.
+app.use((req, res, next) => {
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  next();
+});
 
+// 3. Only allow your site to send the referrer for your own pages.
+app.use((req, res, next) => {
+  res.setHeader('Referrer-Policy', 'same-origin');
+  next();
+});
+
+// Otros headers de seguridad recomendados
+app.use(helmet.hidePoweredBy());
+app.use(helmet.noSniff());
+app.use(helmet.xssFilter());
+
+// CORS solo si lo necesitas (lo dejamos general)
+app.use(cors());
+
+// Body parsers
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use(
-  helmet({
-    frameguard: { action: "sameorigin" },
-    dnsPrefetchControl: { allow: false },
-    referrerPolicy: { policy: "same-origin" }
-  })
-);
+// Routes
+app.use('/api', apiRoutes);
 
-//Sample front-end
-app.route('/b/:board/')
-  .get(function (req, res) {
-    res.sendFile(process.cwd() + '/views/board.html');
-  });
-app.route('/b/:board/:threadid')
-  .get(function (req, res) {
-    res.sendFile(process.cwd() + '/views/thread.html');
-  });
-
-//Index page (static HTML)
-app.route('/')
-  .get(function (req, res) {
-    res.sendFile(process.cwd() + '/views/index.html');
-  });
-
-//For FCC testing purposes
-fccTestingRoutes(app);
-
-//Routing for API 
-apiRoutes(app);
-
-require('./routes/thread.js')(app);
-
-//404 Not Found Middleware
-app.use(function(req, res, next) {
-  res.status(404)
-    .type('text')
-    .send('Not Found');
+// Connect to DB (use env DB)
+const DB = process.env.DB || 'mongodb://127.0.0.1:27017/messageboard';
+mongoose.set('strictQuery', false);
+mongoose.connect(DB, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('Connected to DB');
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
+  }
+}).catch(err => {
+  console.error('DB connection error', err);
 });
 
-
-//Start our server and tests!
-const listener = app.listen(process.env.PORT || 3000, function () {
-  console.log('Your app is listening on port ' + listener.address().port);
-  // if(process.env.NODE_ENV==='test') {
-  //   console.log('Running Tests...');
-  //   setTimeout(function () {
-  //     try {
-  //       runner.run();
-  //     } catch(e) {
-  //       console.log('Tests are not valid:');
-  //       console.error(e);
-  //     }
-  //   }, 1500);
-  // }
-});
-
-module.exports = app; //for testing
+module.exports = app; // export for tests
