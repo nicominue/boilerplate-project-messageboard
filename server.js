@@ -10,9 +10,14 @@ const app = express();
 
 const helmet = require("helmet");
 
-app.use(helmet.frameguard({ action: "sameorigin" }));
-app.use(helmet.dnsPrefetchControl({ allow: false }));
-app.use(helmet.referrerPolicy({ policy: "same-origin" }));
+app.use(
+  helmet({
+    frameguard: { action: 'sameorigin' },
+    dnsPrefetchControl: { allow: false },
+    referrerPolicy: { policy: 'same-origin' },
+  })
+);
+
 
 // CORS
 app.use(cors());
