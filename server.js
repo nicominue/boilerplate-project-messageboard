@@ -3,27 +3,25 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const helmet = require("helmet");
 
 const apiRoutes = require('./routes/api');
 
 const app = express();
 
-const helmet = require("helmet");
+app.use("/public", express.static(process.cwd() + "/public"));
 
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(helmet.frameguard());
 app.use(
   helmet({
-    frameguard: { action: 'sameorigin' },
-    dnsPrefetchControl: { allow: false },
     referrerPolicy: { policy: 'same-origin' },
   })
 );
-
-
-// CORS
-app.use(cors());
-
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(helmet.dnsPrefetchControl());
 
 // Routes
 app.use('/api', apiRoutes);
