@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const helmet = require('helmet');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
@@ -9,9 +8,7 @@ const apiRoutes = require('./routes/api');
 
 const app = express();
 
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
+const helmet = require("helmet");
 
 app.use(helmet.frameguard({ action: "sameorigin" }));
 app.use(helmet.dnsPrefetchControl({ allow: false }));
@@ -19,6 +16,9 @@ app.use(helmet.referrerPolicy({ policy: "same-origin" }));
 
 // CORS
 app.use(cors());
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 // Routes
 app.use('/api', apiRoutes);
