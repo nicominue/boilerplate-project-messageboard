@@ -15,6 +15,16 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.disable("x-powered-by");
+
+app.use((req, res, next) => {
+  res.removeHeader("X-Frame-Options");
+  res.removeHeader("X-DNS-Prefetch-Control");
+  res.removeHeader("Referrer-Policy");
+  next();
+});
+
+
 app.use(
   helmet({
     frameguard: { action: "sameorigin" },
