@@ -1,5 +1,13 @@
 'use strict';
 require('dotenv').config();
+const mongoose = require('mongoose');
+
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("MongoDB conectado"))
+.catch(err => console.error("Error conectado a MongoDB:", err));
 const express     = require('express');
 const bodyParser  = require('body-parser');
 const cors        = require('cors');
@@ -16,6 +24,14 @@ app.use(cors({origin: '*'})); //For FCC testing purposes only
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(
+  helmet({
+    frameguard: { action: "sameorigin" },
+    dnsPrefetchControl: { allow: false },
+    referrerPolicy: { policy: "same-origin" }
+  })
+);
 
 //Sample front-end
 app.route('/b/:board/')
