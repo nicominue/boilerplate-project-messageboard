@@ -9,10 +9,9 @@ const apiRoutes = require('./routes/api');
 
 const app = express();
 
+// Middleware básico
 app.use("/public", express.static(process.cwd() + "/public"));
-
-app.use(cors({origin: '*'})); // Necesario para los tests de freeCodeCamp
-
+app.use(cors({origin: '*'}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -36,30 +35,76 @@ app.get('/_api/app-info', (req, res) => {
   });
 });
 
+// Health check para Render
+app.get('/health', (req, res) => {
+  const status = mongoose.connection.readyState;
+  if (status === 1) {
+    res.json({ status: 'ok', db: 'connected' });
+  } else {
+    res.status(503).json({ status: 'error', db: 'disconnected' });
+  }
+});
+
 // Routes
 app.use('/api', apiRoutes);
 
-// DB
+// Configuración de MongoDB
 const DB = process.env.MONGO_URI || process.env.DB;
-console.log("Connecting to MongoDB...");
+
+if (!DB) {
+  console.error('❌ MONGO_URI no está definida en las variables de entorno');
+  process.exit(1);
+}
+
+console.log("Connecting to MongoDB Atlas...");
 
 mongoose.set('strictQuery', false);
 
-mongoose.connect(DB, {
+// Opciones mejoradas para MongoDB Atlas y Render
+const mongoOptions = {
   useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000, // Timeout después de 5s
+  socketTimeoutMS: 45000, // Cerrar sockets después de 45s de inactividad
+};
+
+// Conectar a MongoDB
+mongoose.connect(DB, mongoOptions)
 .then(() => {
-  console.log('✅ Connected to MongoDB');
+  console.log('✅ Connected to MongoDB Atlas');
+  
+  // Iniciar servidor solo después de conectar a BD
   const PORT = process.env.PORT || 3000;
-  const listener = app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server listening on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`URL: http://localhost:${PORT}`);
   });
 })
 .catch(err => {
-  console.error('❌ MongoDB connection error:', err);
+  console.error('❌ MongoDB connection error:', err.message);
   process.exit(1);
+});
+
+// Manejar errores de conexión después de la conexión inicial
+mongoose.connection.on('error', err => {
+  console.error('❌ MongoDB error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️  MongoDB disconnected');
+});
+
+// Reconectar automáticamente
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected');
+});
+
+// Cerrar conexión al terminar el proceso
+process.on('SIGINT', async () => {
+  await mongoose.connection.close();
+  console.log('MongoDB connection closed');
+  process.exit(0);
 });
 
 module.exports = app;

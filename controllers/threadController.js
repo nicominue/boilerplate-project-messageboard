@@ -5,13 +5,16 @@ exports.createThread = async (req, res) => {
     const board = req.params.board;
     const { text, delete_password } = req.body;
     
+    console.log('Creating thread - board:', board, 'text:', text ? 'provided' : 'missing');
+    
     if (!text || !delete_password) {
+      console.log('Missing fields in createThread');
       return res.status(400).send('missing fields');
     }
 
     const now = new Date();
 
-    const threadData = {
+    const thread = new Thread({
       board: board,
       text: text,
       delete_password: delete_password,
@@ -19,19 +22,26 @@ exports.createThread = async (req, res) => {
       bumped_on: now,
       reported: false,
       replies: []
-    };
+    });
 
-    const thread = new Thread(threadData);
-
-    // Guardar y esperar confirmación
+    // Guardar con validación
     const savedThread = await thread.save();
     
-    // Verificar que se guardó con todos los campos
-    console.log('Thread created with fields:', Object.keys(savedThread.toObject()));
+    // Log para debugging
+    const savedObj = savedThread.toObject();
+    console.log('✅ Thread saved:', {
+      _id: !!savedObj._id,
+      text: !!savedObj.text,
+      created_on: !!savedObj.created_on,
+      bumped_on: !!savedObj.bumped_on,
+      reported: savedObj.reported !== undefined,
+      delete_password: !!savedObj.delete_password,
+      replies: Array.isArray(savedObj.replies)
+    });
 
     return res.redirect(`/b/${board}/`);
   } catch (err) {
-    console.error('Error creating thread:', err);
+    console.error('❌ Error creating thread:', err);
     res.status(500).send('error');
   }
 };
@@ -129,39 +139,49 @@ exports.createReply = async (req, res) => {
     const board = req.params.board;
     const { thread_id, text, delete_password } = req.body;
     
+    console.log('Creating reply - thread_id:', thread_id, 'text:', text ? 'provided' : 'missing');
+    
     if (!thread_id || !text || !delete_password) {
+      console.log('Missing fields in createReply');
       return res.status(400).send('missing fields');
     }
 
     const thread = await Thread.findById(thread_id);
     if (!thread) {
+      console.log('Thread not found:', thread_id);
       return res.status(404).send('not found');
     }
 
     const now = new Date();
 
-    // Crear reply con TODOS los campos explícitos
-    const replyData = {
+    // Agregar reply con todos los campos
+    thread.replies.push({
       text: text,
       delete_password: delete_password,
       created_on: now,
       reported: false
-    };
-
-    thread.replies.push(replyData);
+    });
+    
     thread.bumped_on = now;
     
-    // Guardar y esperar confirmación
+    // Guardar con validación
     const savedThread = await thread.save();
     
-    // Verificar el último reply guardado
+    // Verificar el último reply
     const lastReply = savedThread.replies[savedThread.replies.length - 1];
-    console.log('Reply created with fields:', Object.keys(lastReply.toObject()));
-    console.log('Reply has _id:', !!lastReply._id);
+    const replyObj = lastReply.toObject();
+    console.log('✅ Reply saved:', {
+      _id: !!replyObj._id,
+      text: !!replyObj.text,
+      created_on: !!replyObj.created_on,
+      delete_password: !!replyObj.delete_password,
+      reported: replyObj.reported !== undefined
+    });
+    console.log('✅ Thread bumped_on updated:', savedThread.bumped_on);
 
     return res.redirect(`/b/${board}/${thread_id}`);
   } catch (err) {
-    console.error('Error creating reply:', err);
+    console.error('❌ Error creating reply:', err);
     res.status(500).send('error');
   }
 };
