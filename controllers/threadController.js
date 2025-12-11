@@ -11,7 +11,7 @@ exports.createThread = async (req, res) => {
 
     const now = new Date();
 
-    const thread = new Thread({
+    const threadData = {
       board: board,
       text: text,
       delete_password: delete_password,
@@ -19,13 +19,15 @@ exports.createThread = async (req, res) => {
       bumped_on: now,
       reported: false,
       replies: []
-    });
+    };
 
-    // CRÍTICO: Esperar a que se guarde completamente
-    await thread.save();
+    const thread = new Thread(threadData);
+
+    // Guardar y esperar confirmación
+    const savedThread = await thread.save();
     
-    // Pequeña pausa para asegurar que la BD haya procesado
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Verificar que se guardó con todos los campos
+    console.log('Thread created with fields:', Object.keys(savedThread.toObject()));
 
     return res.redirect(`/b/${board}/`);
   } catch (err) {
@@ -138,22 +140,24 @@ exports.createReply = async (req, res) => {
 
     const now = new Date();
 
-    // Crear el reply con TODOS los campos requeridos
-    thread.replies.push({
+    // Crear reply con TODOS los campos explícitos
+    const replyData = {
       text: text,
       delete_password: delete_password,
       created_on: now,
       reported: false
-    });
-    
-    // Actualizar bumped_on
+    };
+
+    thread.replies.push(replyData);
     thread.bumped_on = now;
     
-    // CRÍTICO: Esperar a que se guarde completamente
-    await thread.save();
+    // Guardar y esperar confirmación
+    const savedThread = await thread.save();
     
-    // Pequeña pausa para asegurar que la BD haya procesado
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Verificar el último reply guardado
+    const lastReply = savedThread.replies[savedThread.replies.length - 1];
+    console.log('Reply created with fields:', Object.keys(lastReply.toObject()));
+    console.log('Reply has _id:', !!lastReply._id);
 
     return res.redirect(`/b/${board}/${thread_id}`);
   } catch (err) {
