@@ -18,5 +18,5 @@ const ThreadSchema = new Schema({
   replies: { type: [ReplySchema], default: [] }
 });
 
-module.exports = mongoose.model('thread', ThreadSchema);
+module.exports = mongoose.model('Thread', ThreadSchema);
 
