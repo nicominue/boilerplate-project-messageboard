@@ -7,15 +7,18 @@ exports.createThread = async (req, res) => {
     const { text, delete_password } = req.body;
     if (!text || !delete_password) return res.status(400).send('missing fields');
 
+    const now = new Date(); // <-- usar el mismo timestamp para ambos campos
+
     const thread = new Thread({
       board,
       text,
       delete_password,
-      created_on: new Date(),
-      bumped_on: new Date()
+      created_on: now,
+      bumped_on: now
+      // reported tiene default en el schema
     });
+
     await thread.save();
-    // often FCC example redirects to board page
     return res.redirect(`/b/${board}/`);
   } catch (err) {
     console.error(err);
@@ -97,22 +100,24 @@ exports.createReply = async (req, res) => {
     const { thread_id, text, delete_password } = req.body;
     if (!thread_id || !text || !delete_password) return res.status(400).send('missing fields');
 
+    const now = new Date(); // <-- mismísimo timestamp para reply.created_on y thread.bumped_on
+
     const reply = {
       text,
       delete_password,
-      created_on: new Date()
+      created_on: now,
+      reported: false   // <-- obligatorio para pasar el test
     };
 
     const thread = await Thread.findById(thread_id);
     if (!thread) return res.status(404).send('not found');
 
     thread.replies.push(reply);
-    thread.bumped_on = new Date();
+    thread.bumped_on = now;
     await thread.save();
 
-    // redirect to thread page
     return res.redirect(`/b/${board}/${thread_id}`);
-  } catch(err) {
+  } catch (err) {
     console.error(err);
     res.status(500).send('error');
   }
